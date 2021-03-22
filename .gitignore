@@ -1,2 +1,4 @@
 __pycache__
 mtg-venv
+.env
+mtg-stone.sqlite
