@@ -71,13 +71,31 @@ def register():
     return jsonify(user_schema.dump(new_user))
 
 
+@app.route("/mtg-stone/log-in", methods=["POST"])
+def login():
+    post_data = request.get_json()
+    db_user = User.query.filter_by(username=post_data.get("username")).first()
+    if db_user is None:
+        return "Username NOT found", 404
+    password = post_data.get("password")
+    db_user_hashed_password = db_user.password
+    valid_password = flask_bcrypt.check_password_hash(
+        db_user_hashed_password, password)
+    if valid_password:
+        session.permanent = True
+        session["username"] = post_data.get("username")
+        return jsonify("User Verified")
+    return "password invalid", 401
+
+
 @app.route("/mtg-stone/user/<id>", methods=["DELETE"])
 def delete_user(id):
-    user = User.query.get(id)
-    db.session.delete(user)
-    db.session.commit()
-
-    return "User was deleted"
+    user = User.query.filter_by(id=id).first()
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        return "User deleted"
+    return "user not found", 404
 
 
 @app.route("/mtg-stone/user/<id>", methods=["GET"])
@@ -90,12 +108,6 @@ def user(id):
 def get_users():
     all_users = User.query.all()
     return jsonify(users_schema.dump(all_users))
-
-
-@app.route('/test-cookie')
-def test_cookie():
-    print(session)
-    return 'hi'
 
 
 if __name__ == "__main__":
