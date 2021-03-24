@@ -25,7 +25,7 @@ cards = db.Table('cards',
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True,)
+    username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(20), nullable=False)
     cards = db.relationship('Card', secondary=cards, lazy='subquery',
@@ -57,6 +57,9 @@ def register():
     username = post_data.get("username")
     email = post_data.get("email")
     password = post_data.get("password")
+    db_user = User.query.filter_by(username=username).first()
+    if db_user:
+        return "Username taken", 409
     hashed_password = flask_bcrypt.generate_password_hash(
         password).decode("utf-8")
     new_user = User(username=username, email=email, password=hashed_password)
@@ -68,17 +71,6 @@ def register():
     return jsonify(user_schema.dump(new_user))
 
 
-@app.route("/mtg-stone/users")
-def get_users():
-    all_users = User.query.all()
-    return jsonify(users_schema.dump(all_users))
-
-
-@app.route("/mtg-stone/user/<id>", methods=["GET"])
-def user(id):
-    user = User.query.get(id)
-    return jsonify(user_schema.dump(user))
-
 @app.route("/mtg-stone/user/<id>", methods=["DELETE"])
 def delete_user(id):
     user = User.query.get(id)
@@ -86,6 +78,24 @@ def delete_user(id):
     db.session.commit()
 
     return "User was deleted"
+
+
+@app.route("/mtg-stone/user/<id>", methods=["GET"])
+def user(id):
+    user = User.query.get(id)
+    return jsonify(user_schema.dump(user))
+
+
+@app.route("/mtg-stone/users")
+def get_users():
+    all_users = User.query.all()
+    return jsonify(users_schema.dump(all_users))
+
+
+@app.route('/test-cookie')
+def test_cookie():
+    print(session)
+    return 'hi'
 
 
 if __name__ == "__main__":
