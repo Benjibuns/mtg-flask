@@ -9,7 +9,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mtg-stone.sqlite'
 app.secret_key = os.environ.get("SECRET_KEY")
-app.permanent_session_lifetime = timedelta(minutes=5)
+app.permanent_session_lifetime = timedelta(days=30)
 CORS(app, supports_credentials=True)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -67,24 +67,23 @@ def register():
     db.session.commit()
     session.permanent = True
     session["username"] = username
-    print(session)
     return jsonify(user_schema.dump(new_user))
 
 
 @app.route("/mtg-stone/log-in", methods=["POST"])
 def login():
     post_data = request.get_json()
-    db_user = User.query.filter_by(username=post_data.get("username")).first()
+    db_user = User.query.filter_by(email=post_data.get("email")).first()
     if db_user is None:
-        return "Username NOT found", 404
+        return "Email NOT found", 404
     password = post_data.get("password")
     db_user_hashed_password = db_user.password
     valid_password = flask_bcrypt.check_password_hash(
         db_user_hashed_password, password)
     if valid_password:
         session.permanent = True
-        session["username"] = post_data.get("username")
-        return jsonify("User Verified")
+        session["email"] = post_data.get("email")
+        return jsonify({"message": "User Verified", "user_id": db_user.id})
     return "password invalid", 401
 
 
@@ -101,7 +100,32 @@ def delete_user(id):
 @app.route("/mtg-stone/user/<id>", methods=["GET"])
 def user(id):
     user = User.query.get(id)
+
     return jsonify(user_schema.dump(user))
+
+
+@app.route("/mtg-user/add-card-to-user", methods=["POST"])
+def add_card_to_user():
+    card_id = request.json['cardId']
+    print(card_id)
+    user_id = request.json['userId']
+    print(user_id)
+    user_card = cards(card_id=card_id, user_id=user_id)
+    print(user_card)
+    db.session.add(user_card)
+    db.session.commit()
+    return "Added to library"
+
+
+# Search bar
+# @app.route("/mtg-stone/users/remove-card", methods=["DELETE"])
+# def removeUserCard():
+
+
+@app.route("/mtg-stone/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify("Logged out")
 
 
 @app.route("/mtg-stone/users")
