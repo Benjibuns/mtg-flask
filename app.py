@@ -1,15 +1,16 @@
 import os
 from datetime import timedelta
-from flask import Flask, json, request, jsonify, session
-from flask_sqlalchemy import SQLAlchemy, model
+from flask import Flask, request, jsonify, session
+from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from marshmallow import fields
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mtg-stone.sqlite'
-app.secret_key = os.environ.get("SECRET_KEY")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    "DATABASE_URL") or 'sqlite:///mtg-stone.sqlite'
+app.secret_key = os.environ.get("SECRET_KEY") or "SUPER_SECRET"
 app.permanent_session_lifetime = timedelta(days=30)
 CORS(app, supports_credentials=True)
 db = SQLAlchemy(app)
@@ -105,7 +106,6 @@ def login():
 
 @app.route("/mtg-stone/logged-in", methods=["GET"])
 def logged_in():
-    print(session)
     if "email" in session:
         db_user = User.query.filter_by(email=session["email"]).first()
         if db_user:
@@ -119,8 +119,6 @@ def logged_in():
 @app.route("/mtg-stone/user/<id>", methods=["GET"])
 def user(id):
     user = User.query.get(id)
-    print(user)
-
     return jsonify(user_schema.dump(user))
 
 
@@ -180,4 +178,4 @@ def get_all_cards():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
