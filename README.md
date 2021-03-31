@@ -1,6 +1,8 @@
 # Database tool for managing accounts and cards/decks
 ## This app is intended to work alongside mtg-stone as a local database
 - please reference Pipfile for dependencies
+## Local database
+- https://github.com/Benjibuns/mtg-stone
 
 
 # How to add items to a database
