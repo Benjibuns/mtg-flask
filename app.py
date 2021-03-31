@@ -10,6 +10,9 @@ from marshmallow import fields
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     "DATABASE_URL") or 'sqlite:///mtg-stone.sqlite'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.secret_key = os.environ.get("SECRET_KEY") or "SUPER_SECRET"
 app.permanent_session_lifetime = timedelta(days=30)
 CORS(app, supports_credentials=True)
