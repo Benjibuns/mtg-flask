@@ -103,11 +103,47 @@ def login():
     return "password invalid", 401
 
 
+@app.route("/mtg-stone/logged-in", methods=["GET"])
+def logged_in():
+    print(session)
+    if "email" in session:
+        db_user = User.query.filter_by(email=session["email"]).first()
+        if db_user:
+            return jsonify({"message": "User Verified", "user_id": db_user.id})
+        else:
+            return jsonify("Session exists, but user does not (anymore)")
+    else:
+        return jsonify("Nope!")
+
+
 @app.route("/mtg-stone/user/<id>", methods=["GET"])
 def user(id):
     user = User.query.get(id)
+    print(user)
 
     return jsonify(user_schema.dump(user))
+
+
+@app.route("/mtg-stone/logout", methods=["POST"])
+def logout():
+    session.pop("email", None)
+    return jsonify("Logged out")
+
+
+@app.route("/mtg-stone/users")
+def get_users():
+    all_users = User.query.all()
+    return jsonify(users_schema.dump(all_users))
+
+
+@app.route("/mtg-stone/delete-user/<id>", methods=["DELETE"])
+def delete_user(id):
+    user = User.query.filter_by(id=id).first()
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        return "User deleted"
+    return "user not found", 404
 
 
 @app.route("/mtg-stone/add-card-to-user", methods=["POST"])
@@ -127,32 +163,20 @@ def add_card_to_user():
         return "Added to library"
 
 
-@app.route("/mtg-stone/logout", methods=["POST"])
-def logout():
-    session.clear()
-    return jsonify("Logged out")
+@app.route("/mtg-stone/remove-card-from-user", methods=["DELETE"])
+def remove_card_from_user():
+    card = Card.query.filter_by(
+        api_card_id=request.json["api_card_id"]).first()
+    db_user = User.query.filter_by(id=request.json["user_id"]).first()
+    card.users.remove(db_user)
+    db.session.commit()
+    return 'Card Deleted'
 
 
 @app.route("/mtg-stone/all-cards", methods=["GET"])
 def get_all_cards():
     all_cards = Card.query.all()
     return jsonify(cards_schema.dump(all_cards))
-
-
-@app.route("/mtg-stone/users")
-def get_users():
-    all_users = User.query.all()
-    return jsonify(users_schema.dump(all_users))
-
-
-@app.route("/mtg-stone/user/<id>", methods=["DELETE"])
-def delete_user(id):
-    user = User.query.filter_by(id=id).first()
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-        return "User deleted"
-    return "user not found", 404
 
 
 if __name__ == "__main__":
